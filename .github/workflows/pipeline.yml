@@ -1,0 +1,48 @@
+name: Pipeline de Integração Contínua (CI)
+
+# Executa sempre que houver um Pull Request para develop ou main
+on:
+  pull_request:
+    branches: [ main, develop ][cite: 1]
+
+jobs:
+  validation:
+    name: Validar Código do Dashboard
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Faz o download do código do repositório para a máquina virtual do GitHub
+      - name: Checkout do código
+        uses: actions/checkout@v4[cite: 1]
+
+      # 2. Verifica se os arquivos obrigatórios do desafio existem na raiz
+      - name: Verificar arquivos obrigatórios
+        run: |
+          echo "Verificando estrutura base do projeto..."
+          if [ ! -f index.html ]; then
+            echo "ERRO: O arquivo index.html não foi encontrado!"
+            exit 1
+          fi
+          if [ ! -f style.css ]; then
+            echo "ERRO: O arquivo style.css não foi encontrado!"
+            exit 1
+          fi
+          echo "Sucesso: index.html e style.css estão presentes!"
+
+      # 3. Configura o Node.js para que possamos usar ferramentas de validação (Linters)
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20
+
+      # 4. Instala e roda o HTMLHint para garantir que não há tags HTML abertas ou erradas
+      - name: Validar Sintaxe do HTML (HTMLHint)
+        run: |
+          npx htmlhint index.html --rules tagname-lowercase,attr-lowercase,spec-char-escape,id-unique,src-not-empty,tag-pair
+
+      # 5. Instala e roda o Stylelint para garantir que o CSS não tem erros de sintaxe
+      - name: Validar Sintaxe do CSS (Stylelint)
+        run: |
+          npm install stylelint stylelint-config-standard --no-save
+          echo '{"extends": "stylelint-config-standard"}' > .stylelintrc.json
+          npx stylelint stylecss --allow-empty-input
